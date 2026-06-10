@@ -4,6 +4,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
 
 // Load environment variables
 dotenv.config();
@@ -192,15 +193,13 @@ if (apiKey && apiKey !== "MY_GEMINI_API_KEY" && apiKey.trim() !== "") {
  */
 let firestore: FirestoreRESTClient | null = null;
 try {
-  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-  if (fs.existsSync(configPath)) {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  if (firebaseConfig && firebaseConfig.projectId) {
     firestore = new FirestoreRESTClient(
-      config.projectId,
-      config.firestoreDatabaseId || config.databaseId || "(default)",
-      config.apiKey
+      firebaseConfig.projectId,
+      firebaseConfig.firestoreDatabaseId || "(default)",
+      firebaseConfig.apiKey
     );
-    console.log("Firestore successfully initialized over REST of project:", config.projectId);
+    console.log("Firestore successfully initialized over REST of project:", firebaseConfig.projectId);
   } else {
     console.warn("firebase-applet-config.json not found. Operating in local-only fallback mode.");
   }
