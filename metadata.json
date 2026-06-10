@@ -1,0 +1,10 @@
+{
+  "name": "Remix: stuck co",
+  "description": "A minimalist sleep aid and rest tracker to help you fall asleep faster and wake up refreshed.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

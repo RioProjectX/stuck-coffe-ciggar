@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "Review": {
+      "title": "Review",
+      "description": "Customer reviews and feedback for products and lounge experiences.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique review ID" },
+        "productId": { "type": "string", "description": "Associated product ID or 'general'" },
+        "productName": { "type": "string", "description": "Name of the product or general experience" },
+        "customerName": { "type": "string", "description": "Name of the reviewer" },
+        "email": { "type": "string", "description": "Email of the reviewer" },
+        "rating": { "type": "number", "description": "Rating score out of 5" },
+        "comment": { "type": "string", "description": "Review comment text" },
+        "status": { "type": "string", "description": "Approval status of the review" },
+        "date": { "type": "string", "description": "Review submission date YYYY-MM-DD" }
+      },
+      "required": ["id", "productId", "productName", "rating", "comment", "customerName", "date"]
+    },
+    "Reservation": {
+      "title": "Reservation",
+      "description": "Lounge table and room reservation details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "guests": { "type": "number" },
+        "tableArea": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string" },
+        "reservationCode": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "customerName", "email", "phone", "date", "time", "guests", "tableArea", "status", "reservationCode", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Lounge customer purchases and checkout orders.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "discount": { "type": "number" },
+        "total": { "type": "number" },
+        "pointsEarned": { "type": "number" },
+        "status": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "voucherCode": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "invoiceNumber": { "type": "string" }
+      },
+      "required": ["id", "customerEmail", "customerName", "items", "subtotal", "tax", "total", "status", "createdAt", "invoiceNumber"]
+    },
+    "PaymentMethod": {
+      "title": "PaymentMethod",
+      "description": "Custom payment methods created by admin with names and instructions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "image": { "type": "string" },
+        "details": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "name", "type", "isActive"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Premium menu products such as coffee, cigars, food and accessories.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "subcategory": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "rating": { "type": "number" },
+        "stock": { "type": "number" },
+        "status": { "type": "string" },
+        "images": { "type": "array" },
+        "details": { "type": "object" }
+      },
+      "required": ["id", "name", "category", "price", "stock", "status"]
+    }
+  },
+  "firestore": {
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Collection of user-submitted reviews and ratings."
+    },
+    "/reservations/{reservationId}": {
+      "schema": "Reservation",
+      "description": "Collection of lounge table space bookings."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of customer checkout cart transactions."
+    },
+    "/payment_methods/{methodId}": {
+      "schema": "PaymentMethod",
+      "description": "Collection of lounge payment systems."
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of coffee shop and cigar lounge menu products."
+    }
+  }
+}

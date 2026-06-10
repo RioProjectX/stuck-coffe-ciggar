@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  /* Lokale Coffee Warm Palette Setup */
+  --color-lokale-cream: #FAF7F2;      /* Elegant warm cream background */
+  --color-lokale-beige: #F4EFE6;      /* Slightly darker cream accent */
+  --color-lokale-green: #163020;      /* Signature Deep Forest Green */
+  --color-lokale-green-light: #2D583B;/* Accent Green */
+  --color-lokale-orange: #E49F2D;     /* Signature Mustard Orange */
+  --color-lokale-orange-light: #FAF2E3;/* Soft warm orange highlight */
+  --color-lokale-wood: #2D2622;       /* Coffee brown charcoal text */
+  --color-lokale-border: #E8E2D7;     /* Soft warm borders */
+  --color-lokale-white: #FFFFFF;      /* Clean card backdrops */
+  
+  /* Map older gold systems so everything resolves gracefully inside existing components */
+  --color-gold-50: #FAF2E3;
+  --color-gold-100: #FAF7F2;
+  --color-gold-200: #E49F2D;
+  --color-gold-300: #E49F2D;
+  --color-gold-400: #163020;
+  --color-gold-500: #163020;
+  --color-gold-600: #2D583B;
+  --color-gold-750: #163020;
+  --color-gold-800: #2D2622;
+  --color-gold-900: #E8E2D7;
+  --color-gold-950: #FAF7F2;
+}
+
+/* Base resets & custom Lokale Coffee signature atmosphere */
+html, body {
+  background-color: #FAF7F2; /* Lokale Coffee warm cream background */
+  color: #2D2622;            /* Luxurious dark wood/charcoal text */
+  font-family: var(--font-sans);
+  scroll-behavior: smooth;
+}
+
+/* Custom premium scrollbar corresponding with Lokale aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF7F2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E8E2D7;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #163020;
+}
+
+/* Smooth fade sections */
+.fade-in-section {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Lokale Coffee retro grid background patterns */
+.lux-grid {
+  background-size: 50px 50px;
+  background-image: linear-gradient(to right, rgba(22, 48, 32, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(22, 48, 32, 0.03) 1px, transparent 1px);
+}

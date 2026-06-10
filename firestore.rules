@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for validating common primitive types and bounds
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Default catch-all rule: Deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Review Collection Validation Rules
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isValidId(reviewId) && isValidReview(incoming());
+      allow update: if isValidId(reviewId) && isValidReview(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().productId == existing().productId &&
+                    incoming().email == existing().email &&
+                    // Restrict update actions primarily to approved status changes or comment touch-ups
+                    incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'comment', 'status']);
+      allow delete: if false; // Deletion is disabled to protect historical records
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'productId', 'productName', 'rating', 'comment', 'customerName', 'date']) &&
+             data.keys().size() <= 9 && // Support id, productId, productName, customerName, email, rating, comment, status, date
+             data.id is string && data.id.size() <= 128 &&
+             data.productId is string && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() <= 200 &&
+             data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 150 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+             (data.rating is int || data.rating is float) && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             (!('status' in data) || (data.status is string && data.status in ['approved', 'pending'])) &&
+             data.date is string && data.date.size() == 10;
+    }
+
+    // 2. Reservation Collection Validation Rules
+    match /reservations/{reservationId} {
+      allow read: if true;
+      allow create: if isValidId(reservationId) && isValidReservation(incoming());
+      allow update: if isValidId(reservationId) && isValidReservation(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().reservationCode == existing().reservationCode &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    function isValidReservation(data) {
+      return data.keys().hasAll(['id', 'customerName', 'email', 'phone', 'date', 'time', 'guests', 'tableArea', 'status', 'reservationCode', 'createdAt']) &&
+             data.keys().size() <= 12 && // Allow notes of type string as optional 12th key
+             data.id is string && data.id.size() <= 128 &&
+             data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 150 &&
+             data.email is string && data.email.size() <= 150 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.date is string && data.date.size() == 10 &&
+             data.time is string && data.time.size() == 5 &&
+             data.guests is int && data.guests >= 1 && data.guests <= 100 &&
+             data.tableArea is string && data.tableArea in ['Lounge Seat', 'Private Cigar Room', 'VIP Patio', 'Bar Area'] &&
+             data.status is string && data.status in ['Pending', 'Approved', 'Cancelled'] &&
+             data.reservationCode is string && data.reservationCode.size() <= 20 &&
+             data.createdAt is string && data.createdAt.size() <= 40 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    // 3. Orders Collection Validation Rules
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow update: if isValidId(orderId) && isValidOrder(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().invoiceNumber == existing().invoiceNumber &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if true; // Admin deletion permitted
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'customerEmail', 'customerName', 'items', 'subtotal', 'tax', 'total', 'status', 'createdAt', 'invoiceNumber']) &&
+             data.keys().size() <= 16 && // Allows phone, address, discount, pointsEarned, paymentMethod, voucherCode as optional
+             data.id is string && data.id.size() <= 128 &&
+             data.customerEmail is string && data.customerEmail.size() <= 150 &&
+             data.customerName is string && data.customerName.size() <= 150 &&
+             data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
+             (data.subtotal is int || data.subtotal is float) && data.subtotal >= 0 &&
+             (data.tax is int || data.tax is float) && data.tax >= 0 &&
+             (!('discount' in data) || ((data.discount is int || data.discount is float) && data.discount >= 0)) &&
+             (data.total is int || data.total is float) && data.total >= 0 &&
+             // Ensure numerical checkout integrity matching subtotal minus any applied discount
+             data.total == (data.subtotal - (data.keys().hasAll(['discount']) ? data.discount : 0)) &&
+             data.status is string && data.status in ['Pending', 'Paid', 'Processing', 'Cancelled', 'Completed', 'Shipped', 'Delivered'] &&
+             data.createdAt is string && data.createdAt.size() <= 40 &&
+             data.invoiceNumber is string && data.invoiceNumber.size() <= 40 &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
+             (!('pointsEarned' in data) || (data.pointsEarned is int && data.pointsEarned >= 0)) &&
+             (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod in ['Midtrans', 'Xendit', 'QRIS', 'Transfer Bank', 'Bank Account BRI', 'E-Wallet DANA'])) &&
+             (!('voucherCode' in data) || (data.voucherCode is string && data.voucherCode.size() <= 30));
+    }
+
+    // 4. Payment Methods Collection Rules
+    match /payment_methods/{methodId} {
+      allow read: if true;
+      allow create: if isValidId(methodId) && isValidPaymentMethod(incoming());
+      allow update: if isValidId(methodId) && isValidPaymentMethod(incoming()) &&
+                    incoming().id == existing().id;
+      allow delete: if true; // Admin deletion permitted
+    }
+
+    function isValidPaymentMethod(data) {
+      return data.keys().hasAll(['id', 'name', 'type', 'isActive']) &&
+             data.keys().size() <= 6 && // Allows image, details as optional keys
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.type is string && data.type in ['qris', 'bank', 'ewallet'] &&
+             data.isActive is bool &&
+             (!('image' in data) || (data.image is string && data.image.size() <= 2000)) &&
+             (!('details' in data) || (data.details is string && data.details.size() <= 1000));
+    }
+
+    // 5. Products Collection Rules
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isValidId(productId) && isValidProduct(incoming());
+      allow update: if isValidId(productId) && isValidProduct(incoming()) &&
+                    incoming().id == existing().id;
+      allow delete: if true; // Admin deletion permitted
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'category', 'price', 'stock', 'status']) &&
+             data.keys().size() <= 12 && // Allows subcategory, description, rating, images, details
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.category is string && data.category in ['coffee', 'non-coffee', 'food', 'cigar'] &&
+             (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 100)) &&
+             (data.price is int || data.price is float) && data.price >= 0 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             (!('rating' in data) || ((data.rating is int || data.rating is float) && data.rating >= 0 && data.rating <= 5)) &&
+             data.stock is int && data.stock >= 0 &&
+             data.status is string && data.status in ['available', 'out_of_stock'] &&
+             (!('images' in data) || (data.images is list && data.images.size() <= 5)) &&
+             (!('details' in data) || (data.details is map));
+    }
+
+    // 6. Special Menu Configuration
+    match /special_menu/{itemId} {
+      allow read: if true;
+      allow create, update: if isValidId(itemId) &&
+                            incoming().id == itemId &&
+                            incoming().name is string &&
+                            incoming().price is int && incoming().price >= 0;
+      allow delete: if true;
+    }
+  }
+}
