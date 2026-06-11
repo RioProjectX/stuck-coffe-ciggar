@@ -210,7 +210,15 @@ try {
 export const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Use smart JSON-body parser that prevents hanging on Vercel Node Serverless functions
+app.use((req, res, next) => {
+  if (req.body !== undefined && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+    // Body was already parsed by serverless gateway (like Vercel)
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 // Restore original requested URL and query params under Vercel Serverless environment
 app.use((req, res, next) => {

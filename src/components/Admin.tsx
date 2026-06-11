@@ -664,9 +664,25 @@ export default function Admin({ brandLogo, onRefreshLogo }: AdminProps) {
         // local update
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as any } : o));
         fetchAdminSuite(); // refresh charts
+        triggerNotification(
+          lang === "id" ? `Status pesanan berhasil diubah menjadi ${status}!` : `Order status updated to ${status}!`,
+          "success"
+        );
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        triggerNotification(
+          lang === "id" 
+            ? `Gagal memperbarui status pesanan: ${errorData.error || res.statusText}` 
+            : `Failed to update order status: ${errorData.error || res.statusText}`,
+          "error"
+        );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      triggerNotification(
+        lang === "id" ? `Error jaringan saat mengubah status pesanan` : `Network error updating order status`,
+        "error"
+      );
     }
   };
 
@@ -868,6 +884,14 @@ export default function Admin({ brandLogo, onRefreshLogo }: AdminProps) {
             "success"
           );
           cancelEditProduct();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          triggerNotification(
+            lang === "id" 
+              ? `Gagal memperbarui: ${errData.error || res.statusText}` 
+              : `failed to update: ${errData.error || res.statusText}`,
+            "error"
+          );
         }
       } else {
         // POST CREATE OPERATION
@@ -884,10 +908,24 @@ export default function Admin({ brandLogo, onRefreshLogo }: AdminProps) {
             "success"
           );
           cancelEditProduct();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          triggerNotification(
+            lang === "id" 
+              ? `Gagal menambahkan menu: ${errData.error || res.statusText}` 
+              : `Failed to add product: ${errData.error || res.statusText}`,
+            "error"
+          );
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      triggerNotification(
+        lang === "id" 
+          ? `Error jaringan/server: ${err.message || err}` 
+          : `Network/Server Error: ${err.message || err}`,
+        "error"
+      );
     }
   };
 
