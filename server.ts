@@ -1600,6 +1600,49 @@ app.post("/api/admin/chats/reply", (req, res) => {
 });
 
 // 10. Admin Metrics (Dashboard chart variables)
+app.get("/api/admin/debug-firestore", async (req, res) => {
+  if (!firestore) {
+    return res.status(500).json({ error: "Firestore client not initialized" });
+  }
+  try {
+    const testDocId = `prod-test-${Date.now()}`;
+    const testProduct = {
+      id: testDocId,
+      name: "Debug Test Latte",
+      category: "coffee",
+      subcategory: "Signature Coffee",
+      price: 45000,
+      description: "A temporary product created to debug Firestore write connectivity.",
+      rating: 4.5,
+      stock: 12,
+      status: "available",
+      images: ["https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop"],
+      details: { origin: "Java", notes: "Mild, sweet" }
+    };
+    
+    // Attempt Firestore Set
+    await firestore.collection("products").doc(testDocId).set(testProduct);
+    
+    // Attempt Firestore Get
+    const snapshot = await firestore.collection("products").get();
+    
+    // Clean up
+    await firestore.collection("products").doc(testDocId).delete();
+    
+    return res.json({
+      success: true,
+      message: "Firestore REST write, read, and delete operations succeeded perfectly!",
+      testDocId
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: err.message || String(err),
+      stack: err.stack
+    });
+  }
+});
+
 app.post("/api/admin/reset-analytics", (req, res) => {
   db_orders = [];
   res.json({ message: "Analytics reset to fresh clean state", success: true });
