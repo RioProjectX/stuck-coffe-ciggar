@@ -2,6 +2,7 @@ import { Search, SlidersHorizontal, ShoppingCart, Star, Share2, Plus, Minus, Tag
 import { useState, useEffect, FormEvent } from "react";
 import { Product, ProductCategory, Review } from "../types";
 import { useLanguage } from "../context/LanguageContext";
+import { FALLBACK_PRODUCTS, FALLBACK_REVIEWS } from "../fallbackData";
 
 interface MenuProps {
   onAddToCart: (product: Product, quantity: number) => void;
@@ -46,13 +47,8 @@ export default function Menu({ onAddToCart, onBuyNow }: MenuProps) {
       setFilteredProducts(data);
     } catch (err) {
       console.warn("Error fetching products, using client fallback:", err);
-      try {
-        const defaultProducts = await import("../../products_persistent.json");
-        setProducts(defaultProducts.default as Product[]);
-        setFilteredProducts(defaultProducts.default as Product[]);
-      } catch (fallbackErr) {
-        console.error("Failed to load local fallback products:", fallbackErr);
-      }
+      setProducts(FALLBACK_PRODUCTS);
+      setFilteredProducts(FALLBACK_PRODUCTS);
     } finally {
       setLoading(false);
     }
@@ -106,13 +102,8 @@ export default function Menu({ onAddToCart, onBuyNow }: MenuProps) {
       setReviews(filteredReviews);
     } catch (err) {
       console.warn("Error fetching reviews, using client fallback:", err);
-      try {
-        const defaultReviews = await import("../../reviews_persistent.json");
-        const filteredReviews = (defaultReviews.default || []).filter((r: any) => r.productId === prod.id);
-        setReviews(filteredReviews);
-      } catch (fallbackErr) {
-        console.error("Failed to load local fallback reviews:", fallbackErr);
-      }
+      const filteredReviews = FALLBACK_REVIEWS.filter((r: Review) => r.productId === prod.id);
+      setReviews(filteredReviews);
     }
   };
 

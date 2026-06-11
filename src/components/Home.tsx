@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { useState, useEffect, FormEvent } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { Review, Product } from "../types";
+import { FALLBACK_PRODUCTS, FALLBACK_REVIEWS, FALLBACK_SPECIAL_MENU } from "../fallbackData";
 
 interface HomeProps {
   setCurrentTab: (tab: string) => void;
@@ -75,12 +76,8 @@ export default function Home({ setCurrentTab, onBookEvent }: HomeProps) {
       })
       .catch((err) => {
         console.warn("Error fetching reviews, using client fallback:", err);
-        import("../../reviews_persistent.json")
-          .then((module) => {
-            setReviews(module.default || []);
-          })
-          .catch((fallbackErr) => console.error("Failed to load local fallback reviews:", fallbackErr))
-          .finally(() => setLoading(false));
+        setReviews(FALLBACK_REVIEWS);
+        setLoading(false);
       });
 
     // Fetch products
@@ -92,11 +89,7 @@ export default function Home({ setCurrentTab, onBookEvent }: HomeProps) {
       .then((data) => setProducts(data))
       .catch((err) => {
         console.warn("Error fetching products, using client fallback:", err);
-        import("../../products_persistent.json")
-          .then((module) => {
-            setProducts((module.default || []) as Product[]);
-          })
-          .catch((fallbackErr) => console.error("Failed to load local fallback products:", fallbackErr));
+        setProducts(FALLBACK_PRODUCTS);
       });
 
     // Fetch special menu
@@ -112,13 +105,7 @@ export default function Home({ setCurrentTab, onBookEvent }: HomeProps) {
       })
       .catch((err) => {
         console.warn("Error fetching special menu, using client fallback:", err);
-        import("../../special_menu_persistent.json")
-          .then((module) => {
-            if (module.default && module.default.length) {
-              setBestSellers(module.default);
-            }
-          })
-          .catch((fallbackErr) => console.error("Failed to load local fallback special menu:", fallbackErr));
+        setBestSellers(FALLBACK_SPECIAL_MENU);
       });
   }, []);
 
