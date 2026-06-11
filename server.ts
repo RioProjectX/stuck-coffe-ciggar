@@ -212,6 +212,25 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Restore original requested URL and query params under Vercel Serverless environment
+app.use((req, res, next) => {
+  const forwardedPath = req.headers["x-vercel-forwarded-path"] as string;
+  if (forwardedPath) {
+    req.url = forwardedPath;
+    try {
+      const parsedUrl = new URL(forwardedPath, "http://localhost");
+      const queryObj: any = {};
+      parsedUrl.searchParams.forEach((val, key) => {
+        queryObj[key] = val;
+      });
+      req.query = queryObj;
+    } catch (e) {
+      console.error("Failed to parse forwarded path parameters under Vercel environment:", e);
+    }
+  }
+  next();
+});
+
 // Seeds & Storage Fallbacks
 const PRODUCTS_FILE = path.join(process.cwd(), "products_persistent.json");
 
@@ -1001,24 +1020,28 @@ const currentUser = {
   address: "Sudirman Luxury Suites Apt 14B, South Jakarta"
 };
 
-let isDataLoaded = false;
+let loadPromise: Promise<void> | null = null;
 async function ensureDataLoaded() {
-  if (isDataLoaded) return;
-  console.log("Ensuring all data is loaded from Firestore...");
-  try {
-    await Promise.all([
-      loadProductsFromCloud(),
-      loadReviewsFromCloud(),
-      loadReservationsFromCloud(),
-      loadOrdersFromCloud(),
-      loadPaymentMethodsFromCloud(),
-      loadSpecialMenuFromCloud()
-    ]);
-    isDataLoaded = true;
-    console.log("All data successfully loaded from Firestore.");
-  } catch (err) {
-    console.error("Critical error loading initial collections from cloud:", err);
+  if (!loadPromise) {
+    loadPromise = (async () => {
+      console.log("Ensuring all data is loaded from Firestore...");
+      try {
+        await Promise.all([
+          loadProductsFromCloud(),
+          loadReviewsFromCloud(),
+          loadReservationsFromCloud(),
+          loadOrdersFromCloud(),
+          loadPaymentMethodsFromCloud(),
+          loadSpecialMenuFromCloud()
+        ]);
+        console.log("All data successfully loaded from Firestore.");
+      } catch (err) {
+        console.error("Critical error loading initial collections from cloud:", err);
+        loadPromise = null;
+      }
+    })();
   }
+  return loadPromise;
 }
 
 app.use(async (req, res, next) => {

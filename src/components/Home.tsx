@@ -65,31 +65,61 @@ export default function Home({ setCurrentTab, onBookEvent }: HomeProps) {
   useEffect(() => {
     // Fetch reviews
     fetch("/api/reviews")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         setReviews(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching reviews:", err);
-        setLoading(false);
+        console.warn("Error fetching reviews, using client fallback:", err);
+        import("../../reviews_persistent.json")
+          .then((module) => {
+            setReviews(module.default || []);
+          })
+          .catch((fallbackErr) => console.error("Failed to load local fallback reviews:", fallbackErr))
+          .finally(() => setLoading(false));
       });
 
     // Fetch products
     fetch("/api/products")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        return res.json();
+      })
       .then((data) => setProducts(data))
-      .catch((err) => console.error("Error fetching products:", err));
+      .catch((err) => {
+        console.warn("Error fetching products, using client fallback:", err);
+        import("../../products_persistent.json")
+          .then((module) => {
+            setProducts((module.default || []) as Product[]);
+          })
+          .catch((fallbackErr) => console.error("Failed to load local fallback products:", fallbackErr));
+      });
 
     // Fetch special menu
     fetch("/api/special-menu")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data && data.length) {
           setBestSellers(data);
         }
       })
-      .catch((err) => console.error("Error fetching special menu:", err));
+      .catch((err) => {
+        console.warn("Error fetching special menu, using client fallback:", err);
+        import("../../special_menu_persistent.json")
+          .then((module) => {
+            if (module.default && module.default.length) {
+              setBestSellers(module.default);
+            }
+          })
+          .catch((fallbackErr) => console.error("Failed to load local fallback special menu:", fallbackErr));
+      });
   }, []);
 
   const handleSubmitReview = async (e: FormEvent) => {

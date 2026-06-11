@@ -68,7 +68,7 @@ service cloud.firestore {
              data.phone is string && data.phone.size() <= 30 &&
              data.date is string && data.date.size() == 10 &&
              data.time is string && data.time.size() == 5 &&
-             data.guests is int && data.guests >= 1 && data.guests <= 100 &&
+             (data.guests is int || data.guests is float) && data.guests >= 1 && data.guests <= 100 &&
              data.tableArea is string && data.tableArea in ['Lounge Seat', 'Private Cigar Room', 'VIP Patio', 'Bar Area'] &&
              data.status is string && data.status in ['Pending', 'Approved', 'Cancelled'] &&
              data.reservationCode is string && data.reservationCode.size() <= 20 &&
@@ -106,7 +106,7 @@ service cloud.firestore {
              data.invoiceNumber is string && data.invoiceNumber.size() <= 40 &&
              (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
              (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
-             (!('pointsEarned' in data) || (data.pointsEarned is int && data.pointsEarned >= 0)) &&
+             (!('pointsEarned' in data) || ((data.pointsEarned is int || data.pointsEarned is float) && data.pointsEarned >= 0)) &&
              (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod in ['Midtrans', 'Xendit', 'QRIS', 'Transfer Bank', 'Bank Account BRI', 'E-Wallet DANA'])) &&
              (!('voucherCode' in data) || (data.voucherCode is string && data.voucherCode.size() <= 30));
     }
@@ -150,7 +150,7 @@ service cloud.firestore {
              (data.price is int || data.price is float) && data.price >= 0 &&
              (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
              (!('rating' in data) || ((data.rating is int || data.rating is float) && data.rating >= 0 && data.rating <= 5)) &&
-             data.stock is int && data.stock >= 0 &&
+             (data.stock is int || data.stock is float) && data.stock >= 0 &&
              data.status is string && data.status in ['available', 'out_of_stock'] &&
              (!('images' in data) || (data.images is list && data.images.size() <= 5)) &&
              (!('details' in data) || (data.details is map));
@@ -162,7 +162,7 @@ service cloud.firestore {
       allow create, update: if isValidId(itemId) &&
                             incoming().id == itemId &&
                             incoming().name is string &&
-                            incoming().price is int && incoming().price >= 0;
+                            (incoming().price is int || incoming().price is float) && incoming().price >= 0;
       allow delete: if true;
     }
   }

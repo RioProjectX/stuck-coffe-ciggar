@@ -40,11 +40,19 @@ export default function Menu({ onAddToCart, onBuyNow }: MenuProps) {
     try {
       setLoading(true);
       const res = await fetch("/api/products");
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       setProducts(data);
       setFilteredProducts(data);
     } catch (err) {
-      console.error("Error fetching products:", err);
+      console.warn("Error fetching products, using client fallback:", err);
+      try {
+        const defaultProducts = await import("../../products_persistent.json");
+        setProducts(defaultProducts.default as Product[]);
+        setFilteredProducts(defaultProducts.default as Product[]);
+      } catch (fallbackErr) {
+        console.error("Failed to load local fallback products:", fallbackErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -92,11 +100,19 @@ export default function Menu({ onAddToCart, onBuyNow }: MenuProps) {
     // Fetch related reviews from server
     try {
       const res = await fetch("/api/reviews");
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       const filteredReviews = data.filter((r: Review) => r.productId === prod.id);
       setReviews(filteredReviews);
     } catch (err) {
-      console.error("Error fetching reviews:", err);
+      console.warn("Error fetching reviews, using client fallback:", err);
+      try {
+        const defaultReviews = await import("../../reviews_persistent.json");
+        const filteredReviews = (defaultReviews.default || []).filter((r: any) => r.productId === prod.id);
+        setReviews(filteredReviews);
+      } catch (fallbackErr) {
+        console.error("Failed to load local fallback reviews:", fallbackErr);
+      }
     }
   };
 
