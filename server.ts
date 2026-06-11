@@ -447,9 +447,9 @@ async function loadProductsFromCloud() {
         return;
       } else {
         console.log("Firestore 'products' collection is empty. Auto-seeding default products...");
-        for (const item of INITIAL_DEFAULT_PRODUCTS) {
-          await firestore.collection("products").doc(item.id).set(item);
-        }
+        await Promise.all(INITIAL_DEFAULT_PRODUCTS.map(item =>
+          firestore!.collection("products").doc(item.id).set(item)
+        ));
         db_products = [...INITIAL_DEFAULT_PRODUCTS];
         saveProducts();
         return;
@@ -702,9 +702,9 @@ async function loadReservationsFromCloud() {
         return;
       } else {
         console.log("Firestore 'reservations' collection is empty. Auto-seeding default reservations...");
-        for (const item of INITIAL_DEFAULT_RESERVATIONS) {
-          await firestore.collection("reservations").doc(item.id).set(item);
-        }
+        await Promise.all(INITIAL_DEFAULT_RESERVATIONS.map(item =>
+          firestore!.collection("reservations").doc(item.id).set(item)
+        ));
         db_reservations = [...INITIAL_DEFAULT_RESERVATIONS];
         saveReservations();
         return;
@@ -863,9 +863,9 @@ async function loadPaymentMethodsFromCloud() {
         return;
       } else {
         console.log("Firestore 'payment_methods' collection is empty. Auto-seeding default payment methods...");
-        for (const item of INITIAL_DEFAULT_PAYMENT_METHODS) {
-          await firestore.collection("payment_methods").doc(item.id).set(item);
-        }
+        await Promise.all(INITIAL_DEFAULT_PAYMENT_METHODS.map(item =>
+          firestore!.collection("payment_methods").doc(item.id).set(item)
+        ));
         db_payment_methods = [...INITIAL_DEFAULT_PAYMENT_METHODS];
         savePaymentMethods();
         return;
@@ -979,9 +979,9 @@ async function loadSpecialMenuFromCloud() {
         return;
       } else {
         console.log("Firestore 'special_menu' collection is empty. Auto-seeding default items...");
-        for (const item of INITIAL_DEFAULT_SPECIAL_MENU) {
-          await firestore.collection("special_menu").doc(item.id).set(item);
-        }
+        await Promise.all(INITIAL_DEFAULT_SPECIAL_MENU.map(item =>
+          firestore!.collection("special_menu").doc(item.id).set(item)
+        ));
         db_special_menu = [...INITIAL_DEFAULT_SPECIAL_MENU];
         saveSpecialMenu();
         return;
@@ -996,9 +996,9 @@ async function loadSpecialMenuFromCloud() {
 async function writeSpecialMenuToCloud(items: any[]) {
   if (firestore) {
     try {
-      for (const item of items) {
-        await firestore.collection("special_menu").doc(item.id).set(item);
-      }
+      await Promise.all(items.map(item =>
+        firestore!.collection("special_menu").doc(item.id).set(item)
+      ));
     } catch (err) {
       console.error("Failed to write special menu to Firestore:", err);
     }
@@ -1075,7 +1075,7 @@ app.get("/api/products", (req, res) => {
 });
 
 // Admin ADD product
-app.post("/api/products", (req, res) => {
+app.post("/api/products", async (req, res) => {
   const { name, category, subcategory, price, description, rating, stock, images, details } = req.body;
   const newProduct = {
     id: `prod-${Date.now()}`,
@@ -1091,12 +1091,12 @@ app.post("/api/products", (req, res) => {
     details: details || {}
   };
   db_products.push(newProduct);
-  writeProductToCloud(newProduct);
+  await writeProductToCloud(newProduct);
   res.status(201).json(newProduct);
 });
 
 // Admin EDIT product
-app.put("/api/products/:id", (req, res) => {
+app.put("/api/products/:id", async (req, res) => {
   const { id } = req.params;
   const index = db_products.findIndex(p => p.id === id);
   if (index === -1) {
@@ -1110,15 +1110,15 @@ app.put("/api/products/:id", (req, res) => {
     status: (Number(req.body.stock) > 0) ? "available" as const : "out_of_stock" as const
   };
   db_products[index] = updated;
-  writeProductToCloud(updated);
+  await writeProductToCloud(updated);
   res.json(updated);
 });
 
 // Admin DELETE product
-app.delete("/api/products/:id", (req, res) => {
+app.delete("/api/products/:id", async (req, res) => {
   const { id } = req.params;
   db_products = db_products.filter(p => p.id !== id);
-  deleteProductFromCloud(id);
+  await deleteProductFromCloud(id);
   res.json({ message: "Product deleted", id });
 });
 
@@ -1127,7 +1127,7 @@ app.get("/api/reservations", (req, res) => {
   res.json(db_reservations);
 });
 
-app.post("/api/reservations", (req, res) => {
+app.post("/api/reservations", async (req, res) => {
   const { customerName, email, phone, date, time, guests, tableArea, notes } = req.body;
   
   const reservationCode = "LOK-RE" + Math.floor(1000 + Math.random() * 9000);
@@ -1147,11 +1147,11 @@ app.post("/api/reservations", (req, res) => {
   };
 
   db_reservations.unshift(newRes);
-  writeReservationToCloud(newRes);
+  await writeReservationToCloud(newRes);
   res.status(201).json(newRes);
 });
 
-app.put("/api/reservations/:id/status", (req, res) => {
+app.put("/api/reservations/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body; // Pending, Approved, Cancelled
   const resv = db_reservations.find(r => r.id === id);
@@ -1159,7 +1159,7 @@ app.put("/api/reservations/:id/status", (req, res) => {
     return res.status(404).json({ error: "Reservation not found" });
   }
   resv.status = status;
-  writeReservationToCloud(resv);
+  await writeReservationToCloud(resv);
   res.json(resv);
 });
 
@@ -1209,7 +1209,7 @@ app.get("/api/orders", (req, res) => {
   res.json(db_orders);
 });
 
-app.post("/api/orders", (req, res) => {
+app.post("/api/orders", async (req, res) => {
   const { items, paymentMethod, voucherCode, address, phone, customerName } = req.body;
   if (!items || !items.length) {
     return res.status(400).json({ error: "Cart is empty" });
@@ -1261,11 +1261,11 @@ app.post("/api/orders", (req, res) => {
   };
 
   db_orders.unshift(newOrder);
-  writeOrderToCloud(newOrder);
+  await writeOrderToCloud(newOrder);
   res.status(201).json(newOrder);
 });
 
-app.put("/api/orders/:id/status", (req, res) => {
+app.put("/api/orders/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const order = db_orders.find(o => o.id === id);
@@ -1273,7 +1273,7 @@ app.put("/api/orders/:id/status", (req, res) => {
     return res.status(404).json({ error: "Order not found" });
   }
   order.status = status;
-  writeOrderToCloud(order);
+  await writeOrderToCloud(order);
   res.json(order);
 });
 
@@ -1288,7 +1288,7 @@ app.get("/api/orders/:id", (req, res) => {
 });
 
 // DELETE single order (Admin action)
-app.delete("/api/orders/:id", (req, res) => {
+app.delete("/api/orders/:id", async (req, res) => {
   const { id } = req.params;
   const index = db_orders.findIndex(o => o.id === id);
   if (index === -1) {
@@ -1296,7 +1296,7 @@ app.delete("/api/orders/:id", (req, res) => {
   }
   db_orders.splice(index, 1);
   saveOrders();
-  deleteOrderFromCloud(id);
+  await deleteOrderFromCloud(id);
   res.json({ message: "Order deleted successfully", id });
 });
 
@@ -1306,7 +1306,7 @@ app.get("/api/payment-methods", (req, res) => {
 });
 
 // POST key to custom payment methods (Admin action)
-app.post("/api/payment-methods", (req, res) => {
+app.post("/api/payment-methods", async (req, res) => {
   const { name, type, image, details, isActive } = req.body;
   if (!name) {
     return res.status(400).json({ error: "Payment method name is required" });
@@ -1320,12 +1320,12 @@ app.post("/api/payment-methods", (req, res) => {
     isActive: isActive !== undefined ? isActive : true
   };
   db_payment_methods.push(newPM);
-  writePaymentMethodToCloud(newPM);
+  await writePaymentMethodToCloud(newPM);
   res.status(201).json(newPM);
 });
 
 // PUT updates to payment methods (Admin action)
-app.put("/api/payment-methods/:id", (req, res) => {
+app.put("/api/payment-methods/:id", async (req, res) => {
   const { id } = req.params;
   const index = db_payment_methods.findIndex(pm => pm.id === id);
   if (index === -1) {
@@ -1336,15 +1336,15 @@ app.put("/api/payment-methods/:id", (req, res) => {
     ...req.body
   };
   db_payment_methods[index] = updated;
-  writePaymentMethodToCloud(updated);
+  await writePaymentMethodToCloud(updated);
   res.json(updated);
 });
 
 // DELETE obsolete payment methods (Admin action)
-app.delete("/api/payment-methods/:id", (req, res) => {
+app.delete("/api/payment-methods/:id", async (req, res) => {
   const { id } = req.params;
   db_payment_methods = db_payment_methods.filter(pm => pm.id !== id);
-  deletePaymentMethodFromCloud(id);
+  await deletePaymentMethodFromCloud(id);
   res.json({ message: "Payment method deleted successfully", id });
 });
 
@@ -1397,7 +1397,7 @@ app.get("/api/reviews", (req, res) => {
   res.json(db_reviews);
 });
 
-app.post("/api/reviews", (req, res) => {
+app.post("/api/reviews", async (req, res) => {
   const { productId, productName, rating, comment, customerName, email } = req.body;
   const newRev = {
     id: `rev-${Date.now()}`,
@@ -1411,7 +1411,7 @@ app.post("/api/reviews", (req, res) => {
     date: new Date().toISOString().split('T')[0]
   };
   db_reviews.unshift(newRev);
-  writeReviewToCloud(newRev);
+  await writeReviewToCloud(newRev);
 
   // Update product's average rating slightly
   if (productId) {
